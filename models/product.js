@@ -1,78 +1,46 @@
-const fs = require('fs');
-const path = require('path');
+
 const Cart = require('../models/cart')
 
-const p = path.join(
-  path.dirname(process.mainModule.filename),
-  'data',
-  'products.json'
-);
+const db = require('../util/database')
 
-const getProductsFromFile = cb => {
-  fs.readFile(p, (err, fileContent) => {
-    if (err) {
-      cb([]);
-    } else {
-      cb(JSON.parse(fileContent));
-    }
-  });
-};
 
 module.exports = class Product {
-  constructor(title, imageUrl, description, price, id) {
+  constructor(id, title, imageUrl, description, price) {
+    this.id = id;
     this.title = title;
     this.imageUrl = imageUrl;
     this.description = description;
     this.price = price;
-    this.id = id;
+
   }
 
   save() {
 
+    return db.execute('insert into products (title,price,description,imageUrl) values(?,?,?,?)',
+      [this.title, this.price, this.description, this.imageUrl]
+
+    );
 
 
-    getProductsFromFile(products => {
-      if (this.id) {
 
-        const existProdIndex = products.findIndex(prod => prod.id === this.id);
-        const updatedProduct = [...products];
-        updatedProduct[existProdIndex] = this;
-        fs.writeFile(p, JSON.stringify(updatedProduct), err => {
-          console.log(err);
-        });
-      } else {
-        this.id = Math.random().toString();
-        products.push(this);
-        fs.writeFile(p, JSON.stringify(products), err => {
-          console.log(err);
-        });
-      }
-    });
   }
 
-  static fetchById(id, cb) {
-    getProductsFromFile((products) => {
-      const prod = products.find((prod) => {
-        return prod.id === id
-      });
-      cb(prod);
-    })
-  }
-
-  static fetchAll(cb) {
-    getProductsFromFile(cb);
+  static fetchAll() {
+    return db.execute('Select * from products')
   }
 
   static deleteproductbyID(id) {
+    return db.execute('delete from products where products.id = ? ',
+      [id]
 
-    getProductsFromFile((products) => {
-      const product = products.find(p => p.id === id)
-      const remainingProducts = products.filter(prod => prod.id !== id);
-      fs.writeFile(p, JSON.stringify(remainingProducts), (err) => {
-                  
-      })
+    );
 
-    })
+  }
+
+  static fetchById(id) {
+    return db.execute('select * from products where products.id = ?'
+    [id]
+    )
   }
 
 }
