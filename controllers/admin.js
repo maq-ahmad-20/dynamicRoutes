@@ -14,13 +14,16 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const price = req.body.price;
   const description = req.body.description;
-  Product.create({
+
+  req.user.createProduct({
     title: title,
     price: price,
     description: description,
     imageUrl: imageUrl
   }).then(result => res.redirect('/admin/products'))
     .catch(err => console.log(err))
+
+
 
 };
 exports.getEditProduct = (req, res, next) => {
@@ -29,8 +32,11 @@ exports.getEditProduct = (req, res, next) => {
     return res.redirect('/')
   }
   const prodId = req.params.productId;
-  Product.findByPk(prodId)
-    .then((result) => {
+  req.user.getProducts({ where: { id: prodId } })     // gives array of db output with  note getsingle product not wprks like fetchall
+
+    //Product.findByPk(prodId) // gives data obj
+    .then((results) => {
+      const result = results[0]
       if (!result) {
         return res.redirect('/')
       }
@@ -51,14 +57,14 @@ exports.postEditProduct = (req, res, next) => {
   const updatedImageUrl = req.body.imageUrl
   const updatedPrice = req.body.price
   const upateddesc = req.body.description
-  const updatedProduct = new Product(prodId, updatedTitle, updatedImageUrl, upateddesc, updatedPrice)
+
   Product.findByPk(prodId)
     .then((result) => {
       result.title = updatedTitle,
         result.imageUrl = updatedImageUrl,
         result.price = updatedPrice,
         result.description = upateddesc
-      return result.save();
+      return result.save();// or you can use update and pass the data in object
     }).then(result => {
       console.log("updated product")
       res.redirect('/admin/products')
@@ -69,14 +75,17 @@ exports.postEditProduct = (req, res, next) => {
 }
 
 exports.getProducts = (req, res, next) => {
-  Product.findAll().then((products) => {
-    res.render('admin/products', {
-      prods: products,
-      pageTitle: 'Admin Products',
-      path: '/admin/products'
-    })
+  //Product.findAll()
 
-  }).catch(err => console.log)
+  req.user.getProducts()
+    .then((products) => {
+      res.render('admin/products', {
+        prods: products,
+        pageTitle: 'Admin Products',
+        path: '/admin/products'
+      })
+
+    }).catch(err => console.log)
 };
 
 exports.deleteProduct = (req, res, next) => {
